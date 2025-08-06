@@ -50,7 +50,7 @@ void UABHpBarWidget::UpdateHpBar(float NewCurrentHp)
 	ensure(MaxHp > 0.0f);
 	if (HpProgressBar)
 	{
-		HpProgressBar->SetPercent(NewCurrentHp / MaxHp);
+		HpProgressBar->SetPercent(CurrentHp / MaxHp);
 	}
 
 	if (HpStat)

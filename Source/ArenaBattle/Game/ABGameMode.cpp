@@ -18,43 +18,9 @@ AABGameMode::AABGameMode()
 	{
 		PlayerControllerClass = PlayerControllerClassRef.Class;
 	}
-
-	ClearScore = 3;
-	CurrentScore = 0;
-	bIsCleared = false;
-}
-
-void AABGameMode::OnPlayerScoreChanged(int32 NewPlayerScore)
-{
-	CurrentScore = NewPlayerScore;
-
-	AABPlayerController* ABPlayerController = Cast<AABPlayerController>(GetWorld()->GetFirstPlayerController());
-	if (ABPlayerController)
-	{
-		ABPlayerController->GameScoreChanged(CurrentScore);
-	}
-
-	if (CurrentScore >= ClearScore)
-	{
-		bIsCleared = true;
-
-		if (ABPlayerController)
-		{
-			ABPlayerController->GameClear();
-		}
-	}
 }
 
 void AABGameMode::OnPlayerDead()
 {
-	AABPlayerController* ABPlayerController = Cast<AABPlayerController>(GetWorld()->GetFirstPlayerController());
-	if (ABPlayerController)
-	{
-		ABPlayerController->GameOver();
-	}
-}
 
-bool AABGameMode::IsGameCleared()
-{
-	return bIsCleared;
 }

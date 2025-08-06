@@ -73,3 +73,9 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+# 폴더 무시
+InfinityBladeWarriors/
+InfinityBladeWeapons/
+StarterContent/
+ParagonYin/

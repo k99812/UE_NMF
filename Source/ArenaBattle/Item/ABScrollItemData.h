@@ -26,5 +26,4 @@ public:
 public:
 	UPROPERTY(EditAnywhere, Category = Stat)
 	FABCharacterStat BaseStat;
-
 };

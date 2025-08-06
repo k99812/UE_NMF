@@ -27,10 +27,10 @@ void AABCharacterNonPlayer::SetDead()
 {
 	Super::SetDead();
 
-	AABAIController* ABIController = Cast<AABAIController>(GetController());
-	if (ABIController)
+	AABAIController* ABAIController = Cast<AABAIController>(GetController());
+	if (ABAIController)
 	{
-		ABIController->StopAI();
+		ABAIController->StopAI();
 	}
 
 	FTimerHandle DeadTimerHandle;

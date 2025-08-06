@@ -284,7 +284,7 @@ void AABCharacterBase::TakeItem(UABItemData* InItemData)
 
 void AABCharacterBase::DrinkPotion(UABItemData* InItemData)
 {
-	UABPotionItemData* PotionItemData = Cast< UABPotionItemData>(InItemData);
+	UABPotionItemData* PotionItemData = Cast<UABPotionItemData>(InItemData);
 	if (PotionItemData)
 	{
 		Stat->HealHp(PotionItemData->HealAmount);
@@ -326,6 +326,6 @@ void AABCharacterBase::SetLevel(int32 InNewLevel)
 
 void AABCharacterBase::ApplyStat(const FABCharacterStat& BaseStat, const FABCharacterStat& ModifierStat)
 {
-	float MoveMentSpeed = (BaseStat + ModifierStat).MovementSpeed;
-	GetCharacterMovement()->MaxWalkSpeed = MoveMentSpeed;
+	float MovementSpeed = (BaseStat + ModifierStat).MovementSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = MovementSpeed;
 }

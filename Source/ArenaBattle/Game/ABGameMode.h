@@ -17,17 +17,6 @@ class ARENABATTLE_API AABGameMode : public AGameModeBase, public IABGameInterfac
 	
 public:
 	AABGameMode();
-	
-	virtual void OnPlayerScoreChanged(int32 NewPlayerScore) override;
+
 	virtual void OnPlayerDead() override;
-	virtual bool IsGameCleared() override;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Game)
-	int32 ClearScore;
-
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Category = Game)
-	int32 CurrentScore;
-
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Category = Game)
-	uint8 bIsCleared : 1;
 };
