@@ -5,6 +5,7 @@
 #include "ABGameMode.h"
 #include "Player/ABPlayerController.h"
 #include "ArenaBattle.h"
+#include "ABGameState.h"
 
 AABGameMode::AABGameMode()
 {
@@ -19,10 +20,13 @@ AABGameMode::AABGameMode()
 	{
 		PlayerControllerClass = PlayerControllerClassRef.Class;
 	}
+
+	GameStateClass = AABGameState::StaticClass();
 }
 
 void AABGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
 {
+	AB_LOG(LogABNetwork, Log, TEXT("-----------------------------------------"));
 	AB_LOG(LogABNetwork, Log, TEXT("Begin"));
 
 	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
