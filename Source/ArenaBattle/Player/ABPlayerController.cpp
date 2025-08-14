@@ -18,6 +18,24 @@ AABPlayerController::AABPlayerController()
 	}
 }
 
+void AABPlayerController::PostInitializeComponents()
+{
+	AB_LOG(LogABNetwork, Log, TEXT("Begin"));
+
+	Super::PostInitializeComponents();
+
+	AB_LOG(LogABNetwork, Log, TEXT("End"));
+}
+
+void AABPlayerController::PostNetInit()
+{
+	AB_LOG(LogABNetwork, Log, TEXT("Begin"));
+
+	Super::PostNetInit();
+
+	AB_LOG(LogABNetwork, Log, TEXT("End"));
+}
+
 void AABPlayerController::BeginPlay()
 {
 	AB_LOG(LogABNetwork, Log, TEXT("Begin"));

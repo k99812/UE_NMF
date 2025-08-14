@@ -31,6 +31,9 @@ void AABGameMode::PreLogin(const FString& Options, const FString& Address, const
 
 	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
 
+	//ErrorMessage에 값이 있을경우 PreLogin에서 접속 차단
+	//ErrorMessage = TEXT("Server is full");
+
 	AB_LOG(LogABNetwork, Log, TEXT("End"));
 }
 
