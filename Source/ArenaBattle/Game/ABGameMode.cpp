@@ -54,16 +54,36 @@ void AABGameMode::PostLogin(APlayerController* NewPlayer)
 
 	Super::PostLogin(NewPlayer);
 
+	UNetDriver* NetDriver = GetNetDriver();
+	if (NetDriver)
+	{
+		if (NetDriver->ClientConnections.Num() == 0)
+		{
+			AB_LOG(LogABNetwork, Log, TEXT("Doesn't exsit ClientConnection"));
+		}
+		else
+		{
+			for (const TObjectPtr<UNetConnection> Connection : NetDriver->ClientConnections)
+			{
+				AB_LOG(LogABNetwork, Log, TEXT("ClientConnections: %s"), *Connection->GetName());
+			}
+		}
+	}
+	else
+	{
+		AB_LOG(LogABNetwork, Log, TEXT("Doesn't exsit NetDriver"));
+	}
+
 	AB_LOG(LogABNetwork, Log, TEXT("End"));
 }
 
 void AABGameMode::StartPlay()
 {
-	AB_LOG(LogABNetwork, Log, TEXT("Begin"));
+	//AB_LOG(LogABNetwork, Log, TEXT("Begin"));
 
-	Super::StartPlay();
+	//Super::StartPlay();
 
-	AB_LOG(LogABNetwork, Log, TEXT("End"));
+	//AB_LOG(LogABNetwork, Log, TEXT("End"));
 }
 
 void AABGameMode::OnPlayerDead()
