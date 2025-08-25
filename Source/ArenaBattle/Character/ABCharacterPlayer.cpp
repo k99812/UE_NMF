@@ -118,14 +118,14 @@ void AABCharacterPlayer::PossessedBy(AController* NewController)
 	AB_LOG(LogABNetwork, Log, TEXT("End"));
 }
 
-void AABCharacterPlayer::PostNetInit()
+void AABCharacterPlayer::OnRep_Owner()
 {
-	AB_LOG(LogABNetwork, Log, TEXT("Begin"));
+	AB_LOG(LogABNetwork, Log, TEXT("Begin: %s"), *GetName());
 
-	Super::PostNetInit();
+	Super::OnRep_Owner();
 
 	AActor* OwnerActor = GetOwner();
-	if (Owner)
+	if (OwnerActor)
 	{
 		AB_LOG(LogABNetwork, Log, TEXT("Owner: %s"), *OwnerActor->GetName());
 	}
@@ -133,6 +133,15 @@ void AABCharacterPlayer::PostNetInit()
 	{
 		AB_LOG(LogABNetwork, Log, TEXT("Doesn't exsit Owner"));
 	}
+
+	AB_LOG(LogABNetwork, Log, TEXT("End"));
+}
+
+void AABCharacterPlayer::PostNetInit()
+{
+	AB_LOG(LogABNetwork, Log, TEXT("Begin: %s"), *GetName());
+
+	Super::PostNetInit();
 
 	AB_LOG(LogABNetwork, Log, TEXT("End"));
 }

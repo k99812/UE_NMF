@@ -79,3 +79,6 @@ InfinityBladeWarriors/
 InfinityBladeWeapons/
 StarterContent/
 ParagonYin/
+
+# 제미나이 설정파일
+*.env
