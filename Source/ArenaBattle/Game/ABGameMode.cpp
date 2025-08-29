@@ -79,11 +79,11 @@ void AABGameMode::PostLogin(APlayerController* NewPlayer)
 
 void AABGameMode::StartPlay()
 {
-	//AB_LOG(LogABNetwork, Log, TEXT("Begin"));
+	AB_LOG(LogABNetwork, Log, TEXT("Begin"));
 
-	//Super::StartPlay();
+	Super::StartPlay();
 
-	//AB_LOG(LogABNetwork, Log, TEXT("End"));
+	AB_LOG(LogABNetwork, Log, TEXT("End"));
 }
 
 void AABGameMode::OnPlayerDead()
