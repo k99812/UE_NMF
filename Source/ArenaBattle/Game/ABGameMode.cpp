@@ -24,6 +24,7 @@ AABGameMode::AABGameMode()
 	GameStateClass = AABGameState::StaticClass();
 }
 
+/*
 void AABGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
 {
 	AB_LOG(LogABNetwork, Log, TEXT("-----------------------------------------"));
@@ -85,6 +86,7 @@ void AABGameMode::StartPlay()
 
 	AB_LOG(LogABNetwork, Log, TEXT("End"));
 }
+*/
 
 void AABGameMode::OnPlayerDead()
 {

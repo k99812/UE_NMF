@@ -3,6 +3,7 @@
 
 #include "Prop/ABFountain.h"
 #include "Components/StaticMeshComponent.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 AABFountain::AABFountain()
@@ -28,6 +29,8 @@ AABFountain::AABFountain()
 	{
 		Water->SetStaticMesh(WaterMeshRef.Object);
 	}
+
+	bReplicates = true;
 }
 
 // Called when the game starts or when spawned
@@ -42,5 +45,30 @@ void AABFountain::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (HasAuthority())
+	{
+		AddActorLocalRotation(FRotator(0.0f, RotationRate * DeltaTime, 0.0f));
+		ServerRotationYaw = RootComponent->GetComponentRotation().Yaw;
+	}
+	else
+	{
+		//FRotator NewRotator = RootComponent->GetComponentRotation();
+		//NewRotator.Yaw = ServerRotationYaw;
+		//RootComponent->SetWorldRotation(NewRotator);
+	}
+}
+
+void AABFountain::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AABFountain, ServerRotationYaw);
+}
+
+void AABFountain::OnRep_ServerRotationYaw()
+{
+	FRotator NewRotator = RootComponent->GetComponentRotation();
+	NewRotator.Yaw = ServerRotationYaw;
+	RootComponent->SetWorldRotation(NewRotator);
 }
 
