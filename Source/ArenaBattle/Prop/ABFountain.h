@@ -41,4 +41,6 @@ public:
 	void OnRep_ServerRotationYaw();
 
 	float RotationRate = 30.0f;
+	float ClientTimeSinceUpdate = 0.0f;
+	float ClientTimeBetweenLastUpdate = 0.0f;
 };

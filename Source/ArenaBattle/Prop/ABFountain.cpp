@@ -32,6 +32,7 @@ AABFountain::AABFountain()
 	}
 
 	bReplicates = true;
+	NetUpdateFrequency = 1.0f;
 }
 
 // Called when the game starts or when spawned
@@ -61,6 +62,19 @@ void AABFountain::Tick(float DeltaTime)
 		AddActorLocalRotation(FRotator(0.0f, RotationRate * DeltaTime, 0.0f));
 		ServerRotationYaw = RootComponent->GetComponentRotation().Yaw;
 	}
+	else
+	{
+		ClientTimeSinceUpdate += DeltaTime;
+		if (ClientTimeBetweenLastUpdate < KINDA_SMALL_NUMBER) return;
+
+		const float EstimateRotationYaw = ServerRotationYaw + RotationRate * ClientTimeBetweenLastUpdate;
+		const float LerpRatio = ClientTimeSinceUpdate / ClientTimeBetweenLastUpdate;
+
+		FRotator ClientRotator = RootComponent->GetComponentRotation();
+		const float ClientNewYaw = FMath::Lerp(ServerRotationYaw, EstimateRotationYaw, LerpRatio);
+		ClientRotator.Yaw = ClientNewYaw;
+		RootComponent->SetWorldRotation(ClientRotator);
+	}
 }
 
 void AABFountain::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -86,5 +100,8 @@ void AABFountain::OnRep_ServerRotationYaw()
 	FRotator NewRotator = RootComponent->GetComponentRotation();
 	NewRotator.Yaw = ServerRotationYaw;
 	RootComponent->SetWorldRotation(NewRotator);
+
+	ClientTimeBetweenLastUpdate = ClientTimeSinceUpdate;
+	ClientTimeSinceUpdate = 0.0f;
 }
 
