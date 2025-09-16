@@ -93,6 +93,18 @@ void AABFountain::OnActorChannelOpen(FInBunch& InBunch, UNetConnection* Connecti
 	AB_LOG(LogABNetwork, Log, TEXT("End"));
 }
 
+bool AABFountain::IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const
+{
+	bool bIsNetRelevant = Super::IsNetRelevantFor(RealViewer, ViewTarget, SrcLocation);
+	if (!bIsNetRelevant)
+	{
+		//SrcLocation은 RealViewer(플레이어 컨트롤러 즉 뷰어)의 로케이션
+		AB_LOG(LogABNetwork, Log, TEXT("Not Relevant:[%s] %s"), *RealViewer->GetName(), *SrcLocation.ToCompactString());
+	}
+
+	return bIsNetRelevant;
+}
+
 void AABFountain::OnRep_ServerRotationYaw()
 {
 	//AB_LOG(LogABNetwork, Log, TEXT("Yaw : %f"), ServerRotationYaw);
