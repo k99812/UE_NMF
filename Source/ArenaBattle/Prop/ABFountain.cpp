@@ -33,6 +33,7 @@ AABFountain::AABFountain()
 
 	bReplicates = true;
 	NetUpdateFrequency = 1.0f;
+	NetCullDistanceSquared = 4000000.0f;
 }
 
 // Called when the game starts or when spawned
