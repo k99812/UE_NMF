@@ -41,16 +41,15 @@ void AABFountain::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	/*
 	if (HasAuthority())
 	{
 		FTimerHandle Handle;
 		GetWorld()->GetTimerManager().SetTimer(Handle, FTimerDelegate::CreateLambda([&]() 
 		{
-			ServerRotationYaw += 1.0f;
+			BigData.Init(BigDataElement, 1000);
+			BigDataElement += 1.0f;
 		}), 1.0f, true, 0.0f);
 	}
-	*/
 }
 
 // Called every frame
@@ -83,6 +82,7 @@ void AABFountain::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AABFountain, ServerRotationYaw);
+	DOREPLIFETIME(AABFountain, BigData);
 }
 
 void AABFountain::OnActorChannelOpen(FInBunch& InBunch, UNetConnection* Connection)
