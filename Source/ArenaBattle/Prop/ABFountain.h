@@ -38,14 +38,20 @@ public:
 	UPROPERTY(ReplicatedUsing = OnRep_ServerRotationYaw)
 	float ServerRotationYaw;
 
-	UPROPERTY(Replicated)
-	TArray<float> BigData;
+	UPROPERTY(ReplicatedUsing = OnRep_ServerLightColor)
+	FLinearColor ServerLightColor;
+
+	//UPROPERTY(Replicated)
+	//TArray<float> BigData;
 
 	UFUNCTION()
 	void OnRep_ServerRotationYaw();
 
+	UFUNCTION()
+	void OnRep_ServerLightColor();
+
 	float RotationRate = 30.0f;
 	float ClientTimeSinceUpdate = 0.0f;
 	float ClientTimeBetweenLastUpdate = 0.0f;
-	float BigDataElement = 0.0f;
+	//float BigDataElement = 0.0f;
 };

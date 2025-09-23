@@ -46,8 +46,11 @@ void AABFountain::BeginPlay()
 		FTimerHandle Handle;
 		GetWorld()->GetTimerManager().SetTimer(Handle, FTimerDelegate::CreateLambda([&]() 
 		{
-			BigData.Init(BigDataElement, 1000);
-			BigDataElement += 1.0f;
+			//BigData.Init(BigDataElement, 1000);
+			//BigDataElement += 1.0f;
+			ServerLightColor = FLinearColor(FMath::RandRange(0.0f, 0.3f), 
+				FMath::RandRange(0.0f, 0.3f), FMath::RandRange(0.0f, 0.3f), 1.0f);
+			OnRep_ServerLightColor();
 		}), 1.0f, true, 0.0f);
 	}
 }
@@ -82,7 +85,8 @@ void AABFountain::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AABFountain, ServerRotationYaw);
-	DOREPLIFETIME(AABFountain, BigData);
+	DOREPLIFETIME(AABFountain, ServerLightColor);
+	//DOREPLIFETIME(AABFountain, BigData);
 }
 
 void AABFountain::OnActorChannelOpen(FInBunch& InBunch, UNetConnection* Connection)
@@ -116,5 +120,10 @@ void AABFountain::OnRep_ServerRotationYaw()
 
 	ClientTimeBetweenLastUpdate = ClientTimeSinceUpdate;
 	ClientTimeSinceUpdate = 0.0f;
+}
+
+void AABFountain::OnRep_ServerLightColor()
+{
+	AB_LOG(LogABNetwork, Log, TEXT("Yaw : %s"), *ServerLightColor.ToString());
 }
 
