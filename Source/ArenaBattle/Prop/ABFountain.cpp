@@ -5,6 +5,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "ArenaBattle.h"
+#include "Components/PointLightComponent.h"
 
 // Sets default values
 AABFountain::AABFountain()
@@ -34,6 +35,7 @@ AABFountain::AABFountain()
 	bReplicates = true;
 	NetUpdateFrequency = 1.0f;
 	NetCullDistanceSquared = 4000000.0f;
+	//NetDormancy = DORM_Initial;
 }
 
 // Called when the game starts or when spawned
@@ -48,10 +50,18 @@ void AABFountain::BeginPlay()
 		{
 			//BigData.Init(BigDataElement, 1000);
 			//BigDataElement += 1.0f;
-			ServerLightColor = FLinearColor(FMath::RandRange(0.0f, 0.3f), 
-				FMath::RandRange(0.0f, 0.3f), FMath::RandRange(0.0f, 0.3f), 1.0f);
+			ServerLightColor = FLinearColor(FMath::RandRange(0.0f, 1.0f), 
+				FMath::RandRange(0.0f, 1.0f), FMath::RandRange(0.0f, 1.0f), 1.0f);
 			OnRep_ServerLightColor();
 		}), 1.0f, true, 0.0f);
+
+		FTimerHandle Handle2;
+		GetWorld()->GetTimerManager().SetTimer(Handle2, FTimerDelegate::CreateLambda([&]()
+		{
+			//액터 휴면상태 해제 함수
+			//FlushNetDormancy();
+		}
+		), 10.0f, false, -1.0f);
 	}
 }
 
@@ -84,9 +94,9 @@ void AABFountain::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AABFountain, ServerRotationYaw);
-	DOREPLIFETIME(AABFountain, ServerLightColor);
 	//DOREPLIFETIME(AABFountain, BigData);
+	DOREPLIFETIME(AABFountain, ServerRotationYaw);
+	DOREPLIFETIME_CONDITION(AABFountain, ServerLightColor, COND_InitialOnly);
 }
 
 void AABFountain::OnActorChannelOpen(FInBunch& InBunch, UNetConnection* Connection)
@@ -124,6 +134,15 @@ void AABFountain::OnRep_ServerRotationYaw()
 
 void AABFountain::OnRep_ServerLightColor()
 {
-	AB_LOG(LogABNetwork, Log, TEXT("Yaw : %s"), *ServerLightColor.ToString());
+	if (HasAuthority())
+	{
+		AB_LOG(LogABNetwork, Log, TEXT("LightColor : %s"), *ServerLightColor.ToString());
+	}
+	
+	//블루프린트에서 추가한 포인트라이트 가져오기
+	UPointLightComponent* PointLight = Cast<UPointLightComponent>(GetComponentByClass(UPointLightComponent::StaticClass()));
+	if (PointLight)
+	{
+		PointLight->SetLightColor(ServerLightColor);
+	}
 }
-
