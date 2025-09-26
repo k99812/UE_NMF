@@ -96,7 +96,7 @@ void AABFountain::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 
 	//DOREPLIFETIME(AABFountain, BigData);
 	DOREPLIFETIME(AABFountain, ServerRotationYaw);
-	DOREPLIFETIME_CONDITION(AABFountain, ServerLightColor, COND_InitialOnly);
+	DOREPLIFETIME(AABFountain, ServerLightColor);
 }
 
 void AABFountain::OnActorChannelOpen(FInBunch& InBunch, UNetConnection* Connection)
@@ -118,6 +118,13 @@ bool AABFountain::IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewT
 	}
 
 	return bIsNetRelevant;
+}
+
+void AABFountain::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)
+{
+	AB_LOG(LogABNetwork, Log, TEXT("Begin"));
+
+	Super::PreReplication(ChangedPropertyTracker);
 }
 
 void AABFountain::OnRep_ServerRotationYaw()
