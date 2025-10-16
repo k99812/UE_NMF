@@ -50,18 +50,37 @@ void AABFountain::BeginPlay()
 		{
 			//BigData.Init(BigDataElement, 1000);
 			//BigDataElement += 1.0f;
-			ServerLightColor = FLinearColor(FMath::RandRange(0.0f, 1.0f), 
+			/*ServerLightColor = FLinearColor(FMath::RandRange(0.0f, 1.0f), 
 				FMath::RandRange(0.0f, 1.0f), FMath::RandRange(0.0f, 1.0f), 1.0f);
 			OnRep_ServerLightColor();
+
+			MulticastRPC_SetLightColor(FLinearColor(FMath::RandRange(0.0f, 1.0f),
+				FMath::RandRange(0.0f, 1.0f), FMath::RandRange(0.0f, 1.0f), 1.0f));
+			*/
 		}), 1.0f, true, 0.0f);
 
 		FTimerHandle Handle2;
 		GetWorld()->GetTimerManager().SetTimer(Handle2, FTimerDelegate::CreateLambda([&]()
 		{
-			//액터 휴면상태 해제 함수
-			//FlushNetDormancy();
+			for (FConstPlayerControllerIterator itr = GetWorld()->GetPlayerControllerIterator(); itr; itr++)
+			{
+				APlayerController* PlayerController = itr->Get();
+				if (PlayerController && !PlayerController->IsLocalPlayerController())
+				{
+					SetOwner(PlayerController);
+				}
+			}
 		}
 		), 10.0f, false, -1.0f);
+	}
+	else
+	{
+		SetOwner(GetWorld()->GetFirstPlayerController());
+		FTimerHandle Handle;
+		GetWorld()->GetTimerManager().SetTimer(Handle, FTimerDelegate::CreateLambda([&]()
+		{
+			ServerRPC_SetLightColor();
+		}), 1.0f, true, 0.0f);
 	}
 }
 
@@ -141,7 +160,7 @@ void AABFountain::OnRep_ServerRotationYaw()
 
 void AABFountain::OnRep_ServerLightColor()
 {
-	if (HasAuthority())
+	if (!HasAuthority())
 	{
 		AB_LOG(LogABNetwork, Log, TEXT("LightColor : %s"), *ServerLightColor.ToString());
 	}
@@ -151,5 +170,23 @@ void AABFountain::OnRep_ServerLightColor()
 	if (PointLight)
 	{
 		PointLight->SetLightColor(ServerLightColor);
+	}
+}
+
+void AABFountain::ServerRPC_SetLightColor_Implementation()
+{
+	MulticastRPC_SetLightColor(FLinearColor(FMath::RandRange(0.0f, 1.0f),
+		FMath::RandRange(0.0f, 1.0f), FMath::RandRange(0.0f, 1.0f), 1.0f));
+}
+
+void AABFountain::MulticastRPC_SetLightColor_Implementation(const FLinearColor& NewLightColor)
+{
+	AB_LOG(LogABNetwork, Log, TEXT("LightColor : %s"), *NewLightColor.ToString());
+
+	//블루프린트에서 추가한 포인트라이트 가져오기
+	UPointLightComponent* PointLight = Cast<UPointLightComponent>(GetComponentByClass(UPointLightComponent::StaticClass()));
+	if (PointLight)
+	{
+		PointLight->SetLightColor(NewLightColor);
 	}
 }
