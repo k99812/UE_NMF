@@ -6,6 +6,7 @@
 #include "Net/UnrealNetwork.h"
 #include "ArenaBattle.h"
 #include "Components/PointLightComponent.h"
+#include "EngineUtils.h"
 
 // Sets default values
 AABFountain::AABFountain()
@@ -57,17 +58,30 @@ void AABFountain::BeginPlay()
 			MulticastRPC_SetLightColor(FLinearColor(FMath::RandRange(0.0f, 1.0f),
 				FMath::RandRange(0.0f, 1.0f), FMath::RandRange(0.0f, 1.0f), 1.0f));
 			*/
+
+			ClientRPC_SetLightColor(FLinearColor(FMath::RandRange(0.0f, 1.0f),
+				FMath::RandRange(0.0f, 1.0f), FMath::RandRange(0.0f, 1.0f), 1.0f));
 		}), 1.0f, true, 0.0f);
 
 		FTimerHandle Handle2;
 		GetWorld()->GetTimerManager().SetTimer(Handle2, FTimerDelegate::CreateLambda([&]()
 		{
-			for (FConstPlayerControllerIterator itr = GetWorld()->GetPlayerControllerIterator(); itr; itr++)
+			/*for (FConstPlayerControllerIterator itr = GetWorld()->GetPlayerControllerIterator(); itr; itr++)
 			{
 				APlayerController* PlayerController = itr->Get();
 				if (PlayerController && !PlayerController->IsLocalPlayerController())
 				{
 					SetOwner(PlayerController);
+					break;
+				}
+			}*/
+
+			for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+			{
+				if (PlayerController && !PlayerController->IsLocalPlayerController())
+				{
+					SetOwner(PlayerController);
+					break;
 				}
 			}
 		}
@@ -75,12 +89,12 @@ void AABFountain::BeginPlay()
 	}
 	else
 	{
-		SetOwner(GetWorld()->GetFirstPlayerController());
+		/*SetOwner(GetWorld()->GetFirstPlayerController());
 		FTimerHandle Handle;
 		GetWorld()->GetTimerManager().SetTimer(Handle, FTimerDelegate::CreateLambda([&]()
 		{
 			ServerRPC_SetLightColor();
-		}), 1.0f, true, 0.0f);
+		}), 1.0f, true, 0.0f);*/
 	}
 }
 
@@ -171,6 +185,23 @@ void AABFountain::OnRep_ServerLightColor()
 	{
 		PointLight->SetLightColor(ServerLightColor);
 	}
+}
+
+void AABFountain::ClientRPC_SetLightColor_Implementation(const FLinearColor& NewLightColor)
+{
+	AB_LOG(LogABNetwork, Log, TEXT("LightColor : %s"), *NewLightColor.ToString());
+
+	//블루프린트에서 추가한 포인트라이트 가져오기
+	UPointLightComponent* PointLight = Cast<UPointLightComponent>(GetComponentByClass(UPointLightComponent::StaticClass()));
+	if (PointLight)
+	{
+		PointLight->SetLightColor(NewLightColor);
+	}
+}
+
+bool AABFountain::ServerRPC_SetLightColor_Validate()
+{
+	return true;
 }
 
 void AABFountain::ServerRPC_SetLightColor_Implementation()
