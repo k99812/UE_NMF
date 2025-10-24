@@ -46,46 +46,34 @@ void AABFountain::BeginPlay()
 	
 	if (HasAuthority())
 	{
-		FTimerHandle Handle;
-		GetWorld()->GetTimerManager().SetTimer(Handle, FTimerDelegate::CreateLambda([&]() 
-		{
-			//BigData.Init(BigDataElement, 1000);
-			//BigDataElement += 1.0f;
-			/*ServerLightColor = FLinearColor(FMath::RandRange(0.0f, 1.0f), 
-				FMath::RandRange(0.0f, 1.0f), FMath::RandRange(0.0f, 1.0f), 1.0f);
-			OnRep_ServerLightColor();
+		//FTimerHandle Handle;
+		//GetWorld()->GetTimerManager().SetTimer(Handle, FTimerDelegate::CreateLambda([&]() 
+		//{
+		//	//BigData.Init(BigDataElement, 1000);
+		//	//BigDataElement += 1.0f;
+		//	/*ServerLightColor = FLinearColor(FMath::RandRange(0.0f, 1.0f), 
+		//		FMath::RandRange(0.0f, 1.0f), FMath::RandRange(0.0f, 1.0f), 1.0f);
+		//	OnRep_ServerLightColor();
 
-			MulticastRPC_SetLightColor(FLinearColor(FMath::RandRange(0.0f, 1.0f),
-				FMath::RandRange(0.0f, 1.0f), FMath::RandRange(0.0f, 1.0f), 1.0f));
-			*/
+		//	MulticastRPC_SetLightColor(FLinearColor(FMath::RandRange(0.0f, 1.0f),
+		//		FMath::RandRange(0.0f, 1.0f), FMath::RandRange(0.0f, 1.0f), 1.0f));
+		//	*/
 
-			ClientRPC_SetLightColor(FLinearColor(FMath::RandRange(0.0f, 1.0f),
-				FMath::RandRange(0.0f, 1.0f), FMath::RandRange(0.0f, 1.0f), 1.0f));
-		}), 1.0f, true, 0.0f);
+		//	ClientRPC_SetLightColor(FLinearColor(FMath::RandRange(0.0f, 1.0f),
+		//		FMath::RandRange(0.0f, 1.0f), FMath::RandRange(0.0f, 1.0f), 1.0f));
+		//}), 1.0f, true, 0.0f);
 
-		FTimerHandle Handle2;
-		GetWorld()->GetTimerManager().SetTimer(Handle2, FTimerDelegate::CreateLambda([&]()
-		{
-			/*for (FConstPlayerControllerIterator itr = GetWorld()->GetPlayerControllerIterator(); itr; itr++)
-			{
-				APlayerController* PlayerController = itr->Get();
-				if (PlayerController && !PlayerController->IsLocalPlayerController())
-				{
-					SetOwner(PlayerController);
-					break;
-				}
-			}*/
+		//FTimerHandle Handle3;
+		//GetWorld()->GetTimerManager().SetTimer(Handle3, FTimerDelegate::CreateLambda([&]()
+		//{
+		//	/*ServerLightColor = FLinearColor(FMath::RandRange(0.0f, 1.0f),
+		//			FMath::RandRange(0.0f, 1.0f), FMath::RandRange(0.0f, 1.0f), 1.0f);
+		//	OnRep_ServerLightColor();*/
 
-			for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
-			{
-				if (PlayerController && !PlayerController->IsLocalPlayerController())
-				{
-					SetOwner(PlayerController);
-					break;
-				}
-			}
-		}
-		), 10.0f, false, -1.0f);
+		//	MulticastRPC_SetLightColor(FLinearColor(FMath::RandRange(0.0f, 1.0f),
+		//		FMath::RandRange(0.0f, 1.0f), FMath::RandRange(0.0f, 1.0f), 1.0f));
+		//}
+		//), 5.0f, false, -1.0f);
 	}
 	else
 	{
@@ -132,33 +120,33 @@ void AABFountain::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 	DOREPLIFETIME(AABFountain, ServerLightColor);
 }
 
-void AABFountain::OnActorChannelOpen(FInBunch& InBunch, UNetConnection* Connection)
-{
-	AB_LOG(LogABNetwork, Log, TEXT("Begin"));
-
-	Super::OnActorChannelOpen(InBunch, Connection);
-
-	AB_LOG(LogABNetwork, Log, TEXT("End"));
-}
-
-bool AABFountain::IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const
-{
-	bool bIsNetRelevant = Super::IsNetRelevantFor(RealViewer, ViewTarget, SrcLocation);
-	if (!bIsNetRelevant)
-	{
-		//SrcLocation은 RealViewer(플레이어 컨트롤러 즉 뷰어)의 로케이션
-		AB_LOG(LogABNetwork, Log, TEXT("Not Relevant:[%s] %s"), *RealViewer->GetName(), *SrcLocation.ToCompactString());
-	}
-
-	return bIsNetRelevant;
-}
-
-void AABFountain::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)
-{
-	AB_LOG(LogABNetwork, Log, TEXT("Begin"));
-
-	Super::PreReplication(ChangedPropertyTracker);
-}
+//void AABFountain::OnActorChannelOpen(FInBunch& InBunch, UNetConnection* Connection)
+//{
+//	AB_LOG(LogABNetwork, Log, TEXT("Begin"));
+//
+//	Super::OnActorChannelOpen(InBunch, Connection);
+//
+//	AB_LOG(LogABNetwork, Log, TEXT("End"));
+//}
+//
+//bool AABFountain::IsNetRelevantFor(const AActor* RealViewer, const AActor* ViewTarget, const FVector& SrcLocation) const
+//{
+//	bool bIsNetRelevant = Super::IsNetRelevantFor(RealViewer, ViewTarget, SrcLocation);
+//	if (!bIsNetRelevant)
+//	{
+//		//SrcLocation은 RealViewer(플레이어 컨트롤러 즉 뷰어)의 로케이션
+//		AB_LOG(LogABNetwork, Log, TEXT("Not Relevant:[%s] %s"), *RealViewer->GetName(), *SrcLocation.ToCompactString());
+//	}
+//
+//	return bIsNetRelevant;
+//}
+//
+//void AABFountain::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)
+//{
+//	AB_LOG(LogABNetwork, Log, TEXT("Begin"));
+//
+//	Super::PreReplication(ChangedPropertyTracker);
+//}
 
 void AABFountain::OnRep_ServerRotationYaw()
 {
