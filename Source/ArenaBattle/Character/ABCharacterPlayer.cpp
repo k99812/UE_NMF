@@ -12,6 +12,11 @@
 #include "CharacterStat/ABCharacterStatComponent.h"
 #include "Interface/ABGameInterface.h"
 #include "ArenaBattle.h"
+#include "Components/CapsuleComponent.h"
+#include "Physics/ABCollision.h"
+#include "Engine/DamageEvents.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
 
 AABCharacterPlayer::AABCharacterPlayer()
 {
@@ -63,6 +68,8 @@ AABCharacterPlayer::AABCharacterPlayer()
 	}
 
 	CurrentCharacterControlType = ECharacterControlType::Quater;
+
+	bCanAttack = true;
 }
 
 void AABCharacterPlayer::BeginPlay()
@@ -258,7 +265,51 @@ void AABCharacterPlayer::QuaterMove(const FInputActionValue& Value)
 
 void AABCharacterPlayer::Attack()
 {
-	ProcessComboCommand();
+	//ProcessComboCommand();
+	if (bCanAttack)
+	{
+		bCanAttack = false;
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+
+		FTimerHandle TimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateLambda([&]() 
+		{
+			bCanAttack = true;
+			GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+		}), AttackTime, false, -1.0f);
+
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		AnimInstance->Montage_Play(ComboActionMontage);
+	}
+}
+
+void AABCharacterPlayer::AttackHitCheck()
+{
+	FHitResult OutHitResult;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(Attack), false, this);
+
+	const float AttackRange = Stat->GetTotalStat().AttackRange;
+	const float AttackRadius = Stat->GetAttackRadius();
+	const float AttackDamage = Stat->GetTotalStat().Attack;
+	const FVector Start = GetActorLocation() + GetActorForwardVector() * GetCapsuleComponent()->GetScaledCapsuleRadius();
+	const FVector End = Start + GetActorForwardVector() * AttackRange;
+
+	bool HitDetected = GetWorld()->SweepSingleByChannel(OutHitResult, Start, End, FQuat::Identity, CCHANNEL_ABACTION, FCollisionShape::MakeSphere(AttackRadius), Params);
+	if (HitDetected)
+	{
+		FDamageEvent DamageEvent;
+		OutHitResult.GetActor()->TakeDamage(AttackDamage, DamageEvent, GetController(), this);
+	}
+
+#if ENABLE_DRAW_DEBUG
+
+	FVector CapsuleOrigin = Start + (End - Start) * 0.5f;
+	float CapsuleHalfHeight = AttackRange * 0.5f;
+	FColor DrawColor = HitDetected ? FColor::Green : FColor::Red;
+
+	DrawDebugCapsule(GetWorld(), CapsuleOrigin, CapsuleHalfHeight, AttackRadius, FRotationMatrix::MakeFromZ(GetActorForwardVector()).ToQuat(), DrawColor, false, 5.0f);
+
+#endif
 }
 
 void AABCharacterPlayer::SetupHUDWidget(UABHUDWidget* InHUDWidget)
