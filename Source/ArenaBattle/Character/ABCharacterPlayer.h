@@ -70,8 +70,16 @@ protected:
 
 	ECharacterControlType CurrentCharacterControlType;
 
+// Attack
+protected:
 	void Attack();
 	virtual void AttackHitCheck() override;
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPC_Attack();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPC_Attack();
 
 	uint8 bCanAttack : 1;
 

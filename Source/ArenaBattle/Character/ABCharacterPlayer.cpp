@@ -268,7 +268,8 @@ void AABCharacterPlayer::Attack()
 	//ProcessComboCommand();
 	if (bCanAttack)
 	{
-		bCanAttack = false;
+		ServerRPC_Attack();
+		/*bCanAttack = false;
 		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
 
 		FTimerHandle TimerHandle;
@@ -279,7 +280,7 @@ void AABCharacterPlayer::Attack()
 		}), AttackTime, false, -1.0f);
 
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-		AnimInstance->Montage_Play(ComboActionMontage);
+		AnimInstance->Montage_Play(ComboActionMontage);*/
 	}
 }
 
@@ -310,6 +311,35 @@ void AABCharacterPlayer::AttackHitCheck()
 	DrawDebugCapsule(GetWorld(), CapsuleOrigin, CapsuleHalfHeight, AttackRadius, FRotationMatrix::MakeFromZ(GetActorForwardVector()).ToQuat(), DrawColor, false, 5.0f);
 
 #endif
+}
+
+void AABCharacterPlayer::ServerRPC_Attack_Implementation()
+{
+	MulticastRPC_Attack();
+}
+
+bool AABCharacterPlayer::ServerRPC_Attack_Validate()
+{
+	return true;
+}
+
+void AABCharacterPlayer::MulticastRPC_Attack_Implementation()
+{
+	if (HasAuthority())
+	{
+		bCanAttack = false;
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+
+		FTimerHandle TimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateLambda([&]()
+		{
+			bCanAttack = true;
+			GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+		}), AttackTime, false, -1.0f);
+	}
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance->Montage_Play(ComboActionMontage);
 }
 
 void AABCharacterPlayer::SetupHUDWidget(UABHUDWidget* InHUDWidget)
