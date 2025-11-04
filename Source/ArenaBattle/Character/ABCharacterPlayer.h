@@ -25,6 +25,7 @@ protected:
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_Owner() override;
 	virtual void PostNetInit() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -81,6 +82,10 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastRPC_Attack();
 
+	UFUNCTION()
+	void OnRep_CanAttack();
+
+	UPROPERTY(ReplicatedUsing = OnRep_CanAttack)
 	uint8 bCanAttack : 1;
 
 	float AttackTime = 1.4667f;

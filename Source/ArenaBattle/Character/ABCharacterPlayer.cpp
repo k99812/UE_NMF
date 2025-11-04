@@ -16,6 +16,7 @@
 #include "Physics/ABCollision.h"
 #include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Net/UnrealNetwork.h"
 
 
 AABCharacterPlayer::AABCharacterPlayer()
@@ -74,6 +75,8 @@ AABCharacterPlayer::AABCharacterPlayer()
 
 void AABCharacterPlayer::BeginPlay()
 {
+	AB_LOG(LogABNetwork, Log, TEXT("Begin"));
+
 	Super::BeginPlay();
 
 	APlayerController* PlayerController = Cast<APlayerController>(GetController());
@@ -286,35 +289,60 @@ void AABCharacterPlayer::Attack()
 
 void AABCharacterPlayer::AttackHitCheck()
 {
-	FHitResult OutHitResult;
-	FCollisionQueryParams Params(SCENE_QUERY_STAT(Attack), false, this);
-
-	const float AttackRange = Stat->GetTotalStat().AttackRange;
-	const float AttackRadius = Stat->GetAttackRadius();
-	const float AttackDamage = Stat->GetTotalStat().Attack;
-	const FVector Start = GetActorLocation() + GetActorForwardVector() * GetCapsuleComponent()->GetScaledCapsuleRadius();
-	const FVector End = Start + GetActorForwardVector() * AttackRange;
-
-	bool HitDetected = GetWorld()->SweepSingleByChannel(OutHitResult, Start, End, FQuat::Identity, CCHANNEL_ABACTION, FCollisionShape::MakeSphere(AttackRadius), Params);
-	if (HitDetected)
+	if (HasAuthority())
 	{
-		FDamageEvent DamageEvent;
-		OutHitResult.GetActor()->TakeDamage(AttackDamage, DamageEvent, GetController(), this);
-	}
+		AB_LOG(LogABNetwork, Log, TEXT("Begin"));
+
+		FHitResult OutHitResult;
+		FCollisionQueryParams Params(SCENE_QUERY_STAT(Attack), false, this);
+
+		const float AttackRange = Stat->GetTotalStat().AttackRange;
+		const float AttackRadius = Stat->GetAttackRadius();
+		const float AttackDamage = Stat->GetTotalStat().Attack;
+		const FVector Start = GetActorLocation() + GetActorForwardVector() * GetCapsuleComponent()->GetScaledCapsuleRadius();
+		const FVector End = Start + GetActorForwardVector() * AttackRange;
+
+		bool HitDetected = GetWorld()->SweepSingleByChannel(OutHitResult, Start, End, FQuat::Identity, CCHANNEL_ABACTION, FCollisionShape::MakeSphere(AttackRadius), Params);
+		if (HitDetected)
+		{
+			FDamageEvent DamageEvent;
+			OutHitResult.GetActor()->TakeDamage(AttackDamage, DamageEvent, GetController(), this);
+		}
 
 #if ENABLE_DRAW_DEBUG
 
-	FVector CapsuleOrigin = Start + (End - Start) * 0.5f;
-	float CapsuleHalfHeight = AttackRange * 0.5f;
-	FColor DrawColor = HitDetected ? FColor::Green : FColor::Red;
+		FVector CapsuleOrigin = Start + (End - Start) * 0.5f;
+		float CapsuleHalfHeight = AttackRange * 0.5f;
+		FColor DrawColor = HitDetected ? FColor::Green : FColor::Red;
 
-	DrawDebugCapsule(GetWorld(), CapsuleOrigin, CapsuleHalfHeight, AttackRadius, FRotationMatrix::MakeFromZ(GetActorForwardVector()).ToQuat(), DrawColor, false, 5.0f);
+		DrawDebugCapsule(GetWorld(), CapsuleOrigin, CapsuleHalfHeight, AttackRadius, FRotationMatrix::MakeFromZ(GetActorForwardVector()).ToQuat(), DrawColor, false, 5.0f);
 
 #endif
+	}
+}
+
+void AABCharacterPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AABCharacterPlayer, bCanAttack);
+}
+
+void AABCharacterPlayer::OnRep_CanAttack()
+{
+	if (bCanAttack)
+	{
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+	}
+	else
+	{
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+	}
 }
 
 void AABCharacterPlayer::ServerRPC_Attack_Implementation()
 {
+	AB_LOG(LogABNetwork, Log, TEXT("Begin"));
 	MulticastRPC_Attack();
 }
 
@@ -325,16 +353,18 @@ bool AABCharacterPlayer::ServerRPC_Attack_Validate()
 
 void AABCharacterPlayer::MulticastRPC_Attack_Implementation()
 {
+	AB_LOG(LogABNetwork, Log, TEXT("Begin"));
+
 	if (HasAuthority())
 	{
 		bCanAttack = false;
-		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+		OnRep_CanAttack();
 
 		FTimerHandle TimerHandle;
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateLambda([&]()
 		{
 			bCanAttack = true;
-			GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+			OnRep_CanAttack();
 		}), AttackTime, false, -1.0f);
 	}
 
