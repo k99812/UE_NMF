@@ -13,6 +13,7 @@
 #include "UI/ABWidgetComponent.h"
 #include "UI/ABHpBarWidget.h"
 #include "Item/ABItems.h"
+#include "Net/UnrealNetwork.h"
 
 DEFINE_LOG_CATEGORY(LogABCharacter);
 
@@ -131,6 +132,31 @@ void AABCharacterBase::SetCharacterControlData(const UABCharacterControlData* Ch
 
 void AABCharacterBase::ProcessComboCommand()
 {
+	/*if (CurrentCombo == 0)
+	{
+		ComboActionBegin();
+		return;
+	}
+
+	if (!ComboTimerHandle.IsValid())
+	{
+		HasNextComboCommand = false;
+	}
+	else
+	{
+		HasNextComboCommand = true;
+	}*/
+
+	ServerRPC_ProcessComboCommand();
+}
+
+void AABCharacterBase::ServerRPC_ProcessComboCommand_Implementation()
+{
+	MulticastRPC_ProcessComboCommand();
+}
+
+void AABCharacterBase::MulticastRPC_ProcessComboCommand_Implementation()
+{
 	if (CurrentCombo == 0)
 	{
 		ComboActionBegin();
@@ -144,35 +170,40 @@ void AABCharacterBase::ProcessComboCommand()
 	else
 	{
 		HasNextComboCommand = true;
-	}
+	} 
 }
 
 void AABCharacterBase::ComboActionBegin()
 {
-	// Combo Status
-	CurrentCombo = 1;
-
-	// Movement Setting
-	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
-
 	// Animation Setting
 	const float AttackSpeedRate = Stat->GetTotalStat().AttackSpeed;
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	AnimInstance->Montage_Play(ComboActionMontage, AttackSpeedRate);
 
-	FOnMontageEnded EndDelegate;
-	EndDelegate.BindUObject(this, &AABCharacterBase::ComboActionEnd);
-	AnimInstance->Montage_SetEndDelegate(EndDelegate, ComboActionMontage);
+	if (HasAuthority())
+	{
+		// Combo Status
+		CurrentCombo = 1;
 
-	ComboTimerHandle.Invalidate();
-	SetComboCheckTimer();
+		// Movement Setting
+		//GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+		OnRep_CurrentCombo();
+
+		FOnMontageEnded EndDelegate;
+		EndDelegate.BindUObject(this, &AABCharacterBase::ComboActionEnd);
+		AnimInstance->Montage_SetEndDelegate(EndDelegate, ComboActionMontage);
+
+		ComboTimerHandle.Invalidate();
+		SetComboCheckTimer();
+	}
 }
 
 void AABCharacterBase::ComboActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
 {
 	ensure(CurrentCombo != 0);
 	CurrentCombo = 0;
-	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+	//GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+	OnRep_CurrentCombo();
 
 	NotifyComboActionEnd();
 }
@@ -199,14 +230,25 @@ void AABCharacterBase::ComboCheck()
 	ComboTimerHandle.Invalidate();
 	if (HasNextComboCommand)
 	{
-		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-
 		CurrentCombo = FMath::Clamp(CurrentCombo + 1, 1, ComboActionData->MaxComboCount);
 		FName NextSection = *FString::Printf(TEXT("%s%d"), *ComboActionData->MontageSectionNamePrefix, CurrentCombo);
+
+		/*
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 		AnimInstance->Montage_JumpToSection(NextSection, ComboActionMontage);
+		*/
+
+		MulticastRPC_ProcessingCombo(NextSection);
+
 		SetComboCheckTimer();
 		HasNextComboCommand = false;
 	}
+}
+
+void AABCharacterBase::MulticastRPC_ProcessingCombo_Implementation(FName NextSection)
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance->Montage_JumpToSection(NextSection, ComboActionMontage);
 }
 
 void AABCharacterBase::AttackHitCheck()
@@ -328,4 +370,23 @@ void AABCharacterBase::ApplyStat(const FABCharacterStat& BaseStat, const FABChar
 {
 	float MovementSpeed = (BaseStat + ModifierStat).MovementSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = MovementSpeed;
+}
+
+void AABCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AABCharacterBase, CurrentCombo);
+}
+
+void AABCharacterBase::OnRep_CurrentCombo()
+{
+	if (CurrentCombo == 0)
+	{
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+	}
+	else
+	{
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+	}
 }

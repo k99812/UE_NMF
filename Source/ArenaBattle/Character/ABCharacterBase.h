@@ -63,6 +63,7 @@ protected:
 	void SetComboCheckTimer();
 	void ComboCheck();
 
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentCombo)
 	int32 CurrentCombo = 0;
 	FTimerHandle ComboTimerHandle;
 	bool HasNextComboCommand = false;
@@ -112,4 +113,19 @@ public:
 	int32 GetLevel();
 	void SetLevel(int32 InNewLevel);
 	void ApplyStat(const FABCharacterStat& BaseStat, const FABCharacterStat& ModifierStat);
+
+protected:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UFUNCTION()
+	void OnRep_CurrentCombo();
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_ProcessComboCommand();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPC_ProcessComboCommand();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRPC_ProcessingCombo(FName NextSection);
 };
