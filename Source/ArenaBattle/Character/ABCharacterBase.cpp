@@ -132,7 +132,7 @@ void AABCharacterBase::SetCharacterControlData(const UABCharacterControlData* Ch
 
 void AABCharacterBase::ProcessComboCommand()
 {
-	/*if (CurrentCombo == 0)
+	if (CurrentCombo == 0)
 	{
 		ComboActionBegin();
 		return;
@@ -145,17 +145,12 @@ void AABCharacterBase::ProcessComboCommand()
 	else
 	{
 		HasNextComboCommand = true;
-	}*/
+	}
 
 	ServerRPC_ProcessComboCommand();
 }
 
 void AABCharacterBase::ServerRPC_ProcessComboCommand_Implementation()
-{
-	MulticastRPC_ProcessComboCommand();
-}
-
-void AABCharacterBase::MulticastRPC_ProcessComboCommand_Implementation()
 {
 	if (CurrentCombo == 0)
 	{
@@ -170,16 +165,61 @@ void AABCharacterBase::MulticastRPC_ProcessComboCommand_Implementation()
 	else
 	{
 		HasNextComboCommand = true;
-	} 
+	}
+
+	MulticastRPC_ProcessComboCommand();
+}
+
+void AABCharacterBase::MulticastRPC_ProcessComboCommand_Implementation()
+{
+	if (!IsLocallyControlled())
+	{
+		PlayBeginAttackAnimation();
+	}
+}
+
+void AABCharacterBase::MulticastRPC_ProcessingCombo_Implementation(FName NextSection)
+{
+	if (!IsLocallyControlled())
+	{
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		AnimInstance->Montage_JumpToSection(NextSection, ComboActionMontage);
+	}
+}
+
+void AABCharacterBase::PlayBeginAttackAnimation()
+{
+	const float AttackSpeedRate = Stat->GetTotalStat().AttackSpeed;
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance->Montage_Play(ComboActionMontage, AttackSpeedRate);
 }
 
 void AABCharacterBase::ComboActionBegin()
 {
 	// Animation Setting
+	/*
 	const float AttackSpeedRate = Stat->GetTotalStat().AttackSpeed;
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	AnimInstance->Montage_Play(ComboActionMontage, AttackSpeedRate);
+	*/
+	PlayBeginAttackAnimation();
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
+	// Combo Status
+	CurrentCombo = 1;
+
+	// Movement Setting
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+	OnRep_CurrentCombo();
+
+	FOnMontageEnded EndDelegate;
+	EndDelegate.BindUObject(this, &AABCharacterBase::ComboActionEnd);
+	AnimInstance->Montage_SetEndDelegate(EndDelegate, ComboActionMontage);
+
+	ComboTimerHandle.Invalidate();
+	SetComboCheckTimer();
+
+	/*
 	if (HasAuthority())
 	{
 		// Combo Status
@@ -196,13 +236,14 @@ void AABCharacterBase::ComboActionBegin()
 		ComboTimerHandle.Invalidate();
 		SetComboCheckTimer();
 	}
+	*/
 }
 
 void AABCharacterBase::ComboActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
 {
 	ensure(CurrentCombo != 0);
 	CurrentCombo = 0;
-	//GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
 	OnRep_CurrentCombo();
 
 	NotifyComboActionEnd();
@@ -243,12 +284,6 @@ void AABCharacterBase::ComboCheck()
 		SetComboCheckTimer();
 		HasNextComboCommand = false;
 	}
-}
-
-void AABCharacterBase::MulticastRPC_ProcessingCombo_Implementation(FName NextSection)
-{
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	AnimInstance->Montage_JumpToSection(NextSection, ComboActionMontage);
 }
 
 void AABCharacterBase::AttackHitCheck()

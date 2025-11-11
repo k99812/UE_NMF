@@ -128,4 +128,6 @@ protected:
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastRPC_ProcessingCombo(FName NextSection);
+
+	void PlayBeginAttackAnimation();
 };

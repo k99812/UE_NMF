@@ -17,6 +17,7 @@
 #include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "GameFramework/GameState.h"
 
 
 AABCharacterPlayer::AABCharacterPlayer()
@@ -268,23 +269,36 @@ void AABCharacterPlayer::QuaterMove(const FInputActionValue& Value)
 
 void AABCharacterPlayer::Attack()
 {
-	//ProcessComboCommand();
-	if (bCanAttack)
-	{
-		ServerRPC_Attack();
-		/*bCanAttack = false;
-		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+	ProcessComboCommand();
+	//if (bCanAttack)
+	//{
+	//	if (!HasAuthority())
+	//	{
+	//		bCanAttack = false;
+	//		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
 
-		FTimerHandle TimerHandle;
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateLambda([&]() 
-		{
-			bCanAttack = true;
-			GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
-		}), AttackTime, false, -1.0f);
+	//		FTimerHandle TimerHandle;
+	//		GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateLambda([&]()
+	//		{
+	//			bCanAttack = true;
+	//			GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+	//		}), AttackTime, false, -1.0f);
+	//	}
 
-		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-		AnimInstance->Montage_Play(ComboActionMontage);*/
-	}
+	//	PlayAttackAnimation();
+
+	//	//클라이언트는 서버보다 늦게 생성돼 시간이 서버보다 늦음
+	//	//그래서 시간을 넘겨줄땐 서버의 시간을 가져와야 됨
+	//	float AttackStartTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
+	//	ServerRPC_Attack(AttackStartTime);
+	//}
+}
+
+void AABCharacterPlayer::PlayAttackAnimation()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	AnimInstance->StopAllMontages(0.0f);
+	AnimInstance->Montage_Play(ComboActionMontage);
 }
 
 void AABCharacterPlayer::AttackHitCheck()
@@ -340,36 +354,43 @@ void AABCharacterPlayer::OnRep_CanAttack()
 	}
 }
 
-void AABCharacterPlayer::ServerRPC_Attack_Implementation()
+void AABCharacterPlayer::ServerRPC_Attack_Implementation(float AttackStartTime)
 {
 	AB_LOG(LogABNetwork, Log, TEXT("Begin"));
+
+	bCanAttack = false;
+	OnRep_CanAttack();
+
+	AttackTimeDifference = GetWorld()->GetTimeSeconds() - AttackStartTime;
+	AB_LOG(LogABNetwork, Log, TEXT("LagTime : %f"), AttackTimeDifference);
+	AttackTimeDifference = FMath::Clamp(AttackTimeDifference, 0.0f, AttackTime - 0.01f);
+
+	FTimerHandle TimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateLambda([&]()
+	{
+		bCanAttack = true;
+		OnRep_CanAttack();
+	}), AttackTime - AttackTimeDifference, false, -1.0f);
+
+	LastAttackStartTime = AttackStartTime;
+
 	MulticastRPC_Attack();
 }
 
-bool AABCharacterPlayer::ServerRPC_Attack_Validate()
+bool AABCharacterPlayer::ServerRPC_Attack_Validate(float AttackStartTime)
 {
-	return true;
+	if (LastAttackStartTime == 0.0f) return true;
+
+	return (AttackStartTime - LastAttackStartTime) >= AttackTime;
 }
 
 void AABCharacterPlayer::MulticastRPC_Attack_Implementation()
 {
-	AB_LOG(LogABNetwork, Log, TEXT("Begin"));
-
-	if (HasAuthority())
+	//다른 클라이언트의 복제본만 실행
+	if (!IsLocallyControlled())
 	{
-		bCanAttack = false;
-		OnRep_CanAttack();
-
-		FTimerHandle TimerHandle;
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateLambda([&]()
-		{
-			bCanAttack = true;
-			OnRep_CanAttack();
-		}), AttackTime, false, -1.0f);
+		PlayAttackAnimation();
 	}
-
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	AnimInstance->Montage_Play(ComboActionMontage);
 }
 
 void AABCharacterPlayer::SetupHUDWidget(UABHUDWidget* InHUDWidget)

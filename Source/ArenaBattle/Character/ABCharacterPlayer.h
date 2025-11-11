@@ -25,7 +25,6 @@ protected:
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_Owner() override;
 	virtual void PostNetInit() override;
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -73,13 +72,15 @@ protected:
 
 // Attack
 protected:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	void Attack();
+	void PlayAttackAnimation();
 	virtual void AttackHitCheck() override;
 
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerRPC_Attack();
+	void ServerRPC_Attack(float AttackStartTime);
 
-	UFUNCTION(NetMulticast, Reliable)
+	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPC_Attack();
 
 	UFUNCTION()
@@ -89,6 +90,8 @@ protected:
 	uint8 bCanAttack : 1;
 
 	float AttackTime = 1.4667f;
+	float LastAttackStartTime = 0.0f;
+	float AttackTimeDifference = 0.0f;
 
 // UI Section
 protected:
