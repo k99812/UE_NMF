@@ -270,28 +270,30 @@ void AABCharacterPlayer::QuaterMove(const FInputActionValue& Value)
 void AABCharacterPlayer::Attack()
 {
 	ProcessComboCommand();
-	//if (bCanAttack)
-	//{
-	//	if (!HasAuthority())
-	//	{
-	//		bCanAttack = false;
-	//		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+	/*
+	if (bCanAttack)
+	{
+		if (!HasAuthority())
+		{
+			bCanAttack = false;
+			GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
 
-	//		FTimerHandle TimerHandle;
-	//		GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateLambda([&]()
-	//		{
-	//			bCanAttack = true;
-	//			GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
-	//		}), AttackTime, false, -1.0f);
-	//	}
+			FTimerHandle TimerHandle;
+			GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateLambda([&]()
+			{
+				bCanAttack = true;
+				GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+			}), AttackTime, false, -1.0f);
+		}
 
-	//	PlayAttackAnimation();
+		PlayAttackAnimation();
 
-	//	//클라이언트는 서버보다 늦게 생성돼 시간이 서버보다 늦음
-	//	//그래서 시간을 넘겨줄땐 서버의 시간을 가져와야 됨
-	//	float AttackStartTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
-	//	ServerRPC_Attack(AttackStartTime);
-	//}
+		//클라이언트는 서버보다 늦게 생성돼 시간이 서버보다 늦음
+		//그래서 시간을 넘겨줄땐 서버의 시간을 가져와야 됨
+		float AttackStartTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
+		ServerRPC_Attack(AttackStartTime);
+	}
+	*/
 }
 
 void AABCharacterPlayer::PlayAttackAnimation()

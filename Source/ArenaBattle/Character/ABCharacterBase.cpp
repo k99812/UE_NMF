@@ -14,6 +14,8 @@
 #include "UI/ABHpBarWidget.h"
 #include "Item/ABItems.h"
 #include "Net/UnrealNetwork.h"
+#include "GameFramework/GameState.h"
+#include "ArenaBattle.h"
 
 DEFINE_LOG_CATEGORY(LogABCharacter);
 
@@ -134,56 +136,80 @@ void AABCharacterBase::ProcessComboCommand()
 {
 	if (CurrentCombo == 0)
 	{
-		ComboActionBegin();
+		PlayBeginAttackAnimation();
+
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
+
+		float AttackTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
+		ServerRPC_StartComboCommand(AttackTime);
 		return;
 	}
-
-	if (!ComboTimerHandle.IsValid())
-	{
-		HasNextComboCommand = false;
-	}
-	else
-	{
-		HasNextComboCommand = true;
-	}
-
-	ServerRPC_ProcessComboCommand();
+	
+	float AttackTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
+	ServerRPC_ProcessComboCommand(AttackTime);
 }
 
-void AABCharacterBase::ServerRPC_ProcessComboCommand_Implementation()
+void AABCharacterBase::ServerRPC_StartComboCommand_Implementation(float InputTime)
 {
-	if (CurrentCombo == 0)
-	{
-		ComboActionBegin();
-		return;
-	}
+	if (CurrentCombo != 0) return;
+
+	const float AttackSpeedRate = Stat->GetTotalStat().AttackSpeed;
+	const float NowWorldTime = GetWorld()->GetTimeSeconds();
+	LastAttackTime = NowWorldTime;
+	LagTime = FMath::Clamp(NowWorldTime - InputTime, 0.0f, AttackSpeedRate - 0.01f);
+
+	ComboActionBegin();
+	MulticastRPC_ProcessComboCommand();
+}
+
+void AABCharacterBase::ServerRPC_ProcessComboCommand_Implementation(float InputTime)
+{
+	if (CurrentCombo == 0) return;
+
+	const float AttackSpeedRate = Stat->GetTotalStat().AttackSpeed;
+	const float NowWorldTime = GetWorld()->GetTimeSeconds();
+	LastAttackTime = NowWorldTime;
+	LagTime = FMath::Clamp(NowWorldTime - InputTime, 0.0f, AttackSpeedRate - 0.01f);
+	//if (InputTime - LastAttackTime < AttackSpeedRate ) return;
 
 	if (!ComboTimerHandle.IsValid())
 	{
+		AB_LOG(LogABNetwork, Log, TEXT("HasNextComboCommand: false"));
 		HasNextComboCommand = false;
 	}
 	else
 	{
+		AB_LOG(LogABNetwork, Log, TEXT("HasNextComboCommand: true"));
 		HasNextComboCommand = true;
 	}
-
-	MulticastRPC_ProcessComboCommand();
 }
 
 void AABCharacterBase::MulticastRPC_ProcessComboCommand_Implementation()
 {
-	if (!IsLocallyControlled())
+	if (GetLocalRole() == ROLE_SimulatedProxy)
 	{
 		PlayBeginAttackAnimation();
-	}
+	} 
 }
 
 void AABCharacterBase::MulticastRPC_ProcessingCombo_Implementation(FName NextSection)
 {
-	if (!IsLocallyControlled())
+	if (!HasAuthority())
 	{
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 		AnimInstance->Montage_JumpToSection(NextSection, ComboActionMontage);
+	}
+}
+
+void AABCharacterBase::OnRep_CurrentCombo()
+{
+	if (CurrentCombo == 0)
+	{
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+	}
+	else
+	{
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
 	}
 }
 
@@ -197,20 +223,15 @@ void AABCharacterBase::PlayBeginAttackAnimation()
 void AABCharacterBase::ComboActionBegin()
 {
 	// Animation Setting
-	/*
-	const float AttackSpeedRate = Stat->GetTotalStat().AttackSpeed;
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	AnimInstance->Montage_Play(ComboActionMontage, AttackSpeedRate);
-	*/
 	PlayBeginAttackAnimation();
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
 	// Combo Status
 	CurrentCombo = 1;
+	OnRep_CurrentCombo();
 
 	// Movement Setting
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
-	OnRep_CurrentCombo();
 
 	FOnMontageEnded EndDelegate;
 	EndDelegate.BindUObject(this, &AABCharacterBase::ComboActionEnd);
@@ -218,31 +239,13 @@ void AABCharacterBase::ComboActionBegin()
 
 	ComboTimerHandle.Invalidate();
 	SetComboCheckTimer();
-
-	/*
-	if (HasAuthority())
-	{
-		// Combo Status
-		CurrentCombo = 1;
-
-		// Movement Setting
-		//GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
-		OnRep_CurrentCombo();
-
-		FOnMontageEnded EndDelegate;
-		EndDelegate.BindUObject(this, &AABCharacterBase::ComboActionEnd);
-		AnimInstance->Montage_SetEndDelegate(EndDelegate, ComboActionMontage);
-
-		ComboTimerHandle.Invalidate();
-		SetComboCheckTimer();
-	}
-	*/
 }
 
 void AABCharacterBase::ComboActionEnd(UAnimMontage* TargetMontage, bool IsProperlyEnded)
 {
 	ensure(CurrentCombo != 0);
 	CurrentCombo = 0;
+	HasNextComboCommand = false;
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
 	OnRep_CurrentCombo();
 
@@ -273,12 +276,10 @@ void AABCharacterBase::ComboCheck()
 	{
 		CurrentCombo = FMath::Clamp(CurrentCombo + 1, 1, ComboActionData->MaxComboCount);
 		FName NextSection = *FString::Printf(TEXT("%s%d"), *ComboActionData->MontageSectionNamePrefix, CurrentCombo);
+		OnRep_CurrentCombo();
 
-		/*
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 		AnimInstance->Montage_JumpToSection(NextSection, ComboActionMontage);
-		*/
-
 		MulticastRPC_ProcessingCombo(NextSection);
 
 		SetComboCheckTimer();
@@ -412,16 +413,4 @@ void AABCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AABCharacterBase, CurrentCombo);
-}
-
-void AABCharacterBase::OnRep_CurrentCombo()
-{
-	if (CurrentCombo == 0)
-	{
-		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
-	}
-	else
-	{
-		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
-	}
 }

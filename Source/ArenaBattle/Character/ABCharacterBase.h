@@ -63,9 +63,10 @@ protected:
 	void SetComboCheckTimer();
 	void ComboCheck();
 
-	UPROPERTY(ReplicatedUsing = OnRep_CurrentCombo)
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentCombo, VisibleAnywhere, Category = "Combo")
 	int32 CurrentCombo = 0;
 	FTimerHandle ComboTimerHandle;
+	UPROPERTY(VisibleAnywhere, Category = "Combo")
 	bool HasNextComboCommand = false;
 
 // Attack Hit Section
@@ -121,7 +122,10 @@ protected:
 	void OnRep_CurrentCombo();
 
 	UFUNCTION(Server, Reliable)
-	void ServerRPC_ProcessComboCommand();
+	void ServerRPC_ProcessComboCommand(float InputTime);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRPC_StartComboCommand(float InputTime);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastRPC_ProcessComboCommand();
@@ -130,4 +134,8 @@ protected:
 	void MulticastRPC_ProcessingCombo(FName NextSection);
 
 	void PlayBeginAttackAnimation();
+
+	float LastAttackTime = 0.0f;
+	float AttackTimeDist = 0.0f;
+	float LagTime = 0.0f;
 };
