@@ -135,6 +135,8 @@ protected:
 
 	void PlayBeginAttackAnimation();
 
+	bool bIsWaitingResponse : 1 = false;
+
 	float LastAttackTime = 0.0f;
 	float AttackTimeDist = 0.0f;
 	float LagTime = 0.0f;

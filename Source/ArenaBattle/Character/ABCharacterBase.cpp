@@ -134,6 +134,10 @@ void AABCharacterBase::SetCharacterControlData(const UABCharacterControlData* Ch
 
 void AABCharacterBase::ProcessComboCommand()
 {
+	if (bIsWaitingResponse) return;
+
+	bIsWaitingResponse = true;
+
 	if (CurrentCombo == 0)
 	{
 		PlayBeginAttackAnimation();
@@ -144,7 +148,7 @@ void AABCharacterBase::ProcessComboCommand()
 		ServerRPC_StartComboCommand(AttackTime);
 		return;
 	}
-	
+
 	float AttackTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 	ServerRPC_ProcessComboCommand(AttackTime);
 }
@@ -170,16 +174,13 @@ void AABCharacterBase::ServerRPC_ProcessComboCommand_Implementation(float InputT
 	const float NowWorldTime = GetWorld()->GetTimeSeconds();
 	LastAttackTime = NowWorldTime;
 	LagTime = FMath::Clamp(NowWorldTime - InputTime, 0.0f, AttackSpeedRate - 0.01f);
-	//if (InputTime - LastAttackTime < AttackSpeedRate ) return;
 
 	if (!ComboTimerHandle.IsValid())
 	{
-		AB_LOG(LogABNetwork, Log, TEXT("HasNextComboCommand: false"));
 		HasNextComboCommand = false;
 	}
 	else
 	{
-		AB_LOG(LogABNetwork, Log, TEXT("HasNextComboCommand: true"));
 		HasNextComboCommand = true;
 	}
 }
@@ -205,10 +206,12 @@ void AABCharacterBase::OnRep_CurrentCombo()
 {
 	if (CurrentCombo == 0)
 	{
+		bIsWaitingResponse = false;
 		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
 	}
 	else
 	{
+		bIsWaitingResponse = false;
 		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None);
 	}
 }
@@ -265,7 +268,7 @@ void AABCharacterBase::SetComboCheckTimer()
 	float ComboEffectiveTime = (ComboActionData->EffectiveFrameCount[ComboIndex] / ComboActionData->FrameRate) / AttackSpeedRate;
 	if (ComboEffectiveTime > 0.0f)
 	{
-		GetWorld()->GetTimerManager().SetTimer(ComboTimerHandle, this, &AABCharacterBase::ComboCheck, ComboEffectiveTime, false);
+		GetWorld()->GetTimerManager().SetTimer(ComboTimerHandle, this, &AABCharacterBase::ComboCheck, ComboEffectiveTime - LagTime, false);
 	}
 }
 

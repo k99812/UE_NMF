@@ -269,8 +269,7 @@ void AABCharacterPlayer::QuaterMove(const FInputActionValue& Value)
 
 void AABCharacterPlayer::Attack()
 {
-	ProcessComboCommand();
-	/*
+	//ProcessComboCommand();
 	if (bCanAttack)
 	{
 		if (!HasAuthority())
@@ -293,7 +292,6 @@ void AABCharacterPlayer::Attack()
 		float AttackStartTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 		ServerRPC_Attack(AttackStartTime);
 	}
-	*/
 }
 
 void AABCharacterPlayer::PlayAttackAnimation()
