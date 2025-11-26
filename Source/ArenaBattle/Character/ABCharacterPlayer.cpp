@@ -303,7 +303,7 @@ void AABCharacterPlayer::PlayAttackAnimation()
 
 void AABCharacterPlayer::AttackHitCheck()
 {
-	if (HasAuthority())
+	if (IsLocallyControlled())
 	{
 		AB_LOG(LogABNetwork, Log, TEXT("Begin"));
 
@@ -317,7 +317,24 @@ void AABCharacterPlayer::AttackHitCheck()
 		const FVector End = Start + GetActorForwardVector() * AttackRange;
 
 		bool HitDetected = GetWorld()->SweepSingleByChannel(OutHitResult, Start, End, FQuat::Identity, CCHANNEL_ABACTION, FCollisionShape::MakeSphere(AttackRadius), Params);
-		if (HitDetected)
+		
+		float HitCheckTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
+		const FVector Forward = GetActorForwardVector();
+
+		if (!HasAuthority())
+		{
+			//로컬에서 진행되는 히트판정은 서버로 보내 검증을 받아야함
+			if (HitDetected)
+			{
+				ServerRPC_NotifyHit(OutHitResult, HitCheckTime);
+			}
+			else
+			{
+				ServerRPC_NotifMiss(Start, End, Forward, HitCheckTime);
+			}
+		}
+
+		/*if (HitDetected)
 		{
 			FDamageEvent DamageEvent;
 			OutHitResult.GetActor()->TakeDamage(AttackDamage, DamageEvent, GetController(), this);
@@ -331,8 +348,38 @@ void AABCharacterPlayer::AttackHitCheck()
 
 		DrawDebugCapsule(GetWorld(), CapsuleOrigin, CapsuleHalfHeight, AttackRadius, FRotationMatrix::MakeFromZ(GetActorForwardVector()).ToQuat(), DrawColor, false, 5.0f);
 
-#endif
+#endif*/
 	}
+}
+
+bool AABCharacterPlayer::ServerRPC_NotifyHit_Validate(const FHitResult& HitResult, float HitcheckTime)
+{
+	return true;
+}
+
+void AABCharacterPlayer::ServerRPC_NotifyHit_Implementation(const FHitResult& HitResult, float HitcheckTime)
+{
+	AActor* TargetActor = HitResult.GetActor();
+	if (IsValid(TargetActor))
+	{
+		const FVector HitLocation = HitResult.Location;
+		const FBox HitBox = this->GetComponentsBoundingBox();
+		const FVector ActorBoxCenter = (HitBox.Min + HitBox.Max) / 2;
+		if (FVector::DistSquared(HitLocation, ActorBoxCenter) <= AcceptCheckDistance * AcceptCheckDistance)
+		{
+
+		}
+	}
+}
+
+bool AABCharacterPlayer::ServerRPC_NotifMiss_Validate(FVector TraceStart, FVector TraceEnd, FVector TraceDir, float HitCheckTime)
+{
+	return true;
+}
+
+void AABCharacterPlayer::ServerRPC_NotifMiss_Implementation(FVector TraceStart, FVector TraceEnd, FVector TraceDir, float HitCheckTime)
+{
+
 }
 
 void AABCharacterPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

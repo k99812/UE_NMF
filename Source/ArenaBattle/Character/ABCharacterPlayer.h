@@ -83,6 +83,12 @@ protected:
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastRPC_Attack();
 
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPC_NotifyHit(const FHitResult& HitResult, float HitcheckTime);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRPC_NotifMiss(FVector TraceStart, FVector TraceEnd, FVector TraceDir, float HitCheckTime);
+
 	UFUNCTION()
 	void OnRep_CanAttack();
 
@@ -92,6 +98,7 @@ protected:
 	float AttackTime = 1.4667f;
 	float LastAttackStartTime = 0.0f;
 	float AttackTimeDifference = 0.0f;
+	float AcceptCheckDistance = 300.0f;
 
 // UI Section
 protected:
