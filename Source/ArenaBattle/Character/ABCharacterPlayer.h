@@ -76,6 +76,8 @@ protected:
 	void Attack();
 	void PlayAttackAnimation();
 	virtual void AttackHitCheck() override;
+	void AttackHitConfirm(AActor* Target);
+	void DrawnDebugAttackRange(const FColor& DrawColor, FVector Start, FVector End, FVector Forward);
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPC_Attack(float AttackStartTime);
@@ -84,7 +86,7 @@ protected:
 	void MulticastRPC_Attack();
 
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerRPC_NotifyHit(const FHitResult& HitResult, float HitcheckTime);
+	void ServerRPC_NotifyHit(const FHitResult& HitResult, float HitCheckTime);
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRPC_NotifMiss(FVector TraceStart, FVector TraceEnd, FVector TraceDir, float HitCheckTime);
@@ -99,6 +101,7 @@ protected:
 	float LastAttackStartTime = 0.0f;
 	float AttackTimeDifference = 0.0f;
 	float AcceptCheckDistance = 300.0f;
+	float AcceptMinCheckTime = 0.15f;
 
 // UI Section
 protected:

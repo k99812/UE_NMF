@@ -321,7 +321,16 @@ void AABCharacterPlayer::AttackHitCheck()
 		float HitCheckTime = GetWorld()->GetGameState()->GetServerWorldTimeSeconds();
 		const FVector Forward = GetActorForwardVector();
 
-		if (!HasAuthority())
+		if (HasAuthority())
+		{
+			FColor DebugColor = HitDetected ? FColor::Green : FColor::Red;
+			DrawnDebugAttackRange(DebugColor, Start, End, Forward);
+			if (HitDetected)
+			{
+				AttackHitConfirm(OutHitResult.GetActor());
+			}
+		}
+		else
 		{
 			//로컬에서 진행되는 히트판정은 서버로 보내 검증을 받아야함
 			if (HitDetected)
@@ -352,34 +361,80 @@ void AABCharacterPlayer::AttackHitCheck()
 	}
 }
 
-bool AABCharacterPlayer::ServerRPC_NotifyHit_Validate(const FHitResult& HitResult, float HitcheckTime)
+void AABCharacterPlayer::DrawnDebugAttackRange(const FColor& DrawColor, FVector Start, FVector End, FVector Forward)
 {
-	return true;
+#if ENABLE_DRAW_DEBUG
+
+	float AttackRange = Stat->GetTotalStat().AttackRange;
+	float AttackRadius = Stat->GetAttackRadius();
+	FVector CapsuleOrigin = Start + (End - Start) * 0.5f;
+	float CapsuleHalfHeight = AttackRange * 0.5f;
+
+	DrawDebugCapsule(GetWorld(), CapsuleOrigin, CapsuleHalfHeight, AttackRadius, FRotationMatrix::MakeFromZ(Forward).ToQuat(), DrawColor, false, 5.0f);
+
+#endif
 }
 
-void AABCharacterPlayer::ServerRPC_NotifyHit_Implementation(const FHitResult& HitResult, float HitcheckTime)
+void AABCharacterPlayer::AttackHitConfirm(AActor* Target)
+{
+	AB_LOG(LogABNetwork, Log, TEXT("Begin"));
+
+	if (HasAuthority())
+	{
+		const float AttackDamage = Stat->GetTotalStat().Attack;
+		FDamageEvent DamageEvent;
+		Target->TakeDamage(AttackDamage, DamageEvent, GetController(), this);
+	}
+}
+
+bool AABCharacterPlayer::ServerRPC_NotifyHit_Validate(const FHitResult& HitResult, float HitCheckTime)
+{
+	if (LastAttackStartTime == 0.0f)
+	{
+		return true;
+	}
+
+	return (HitCheckTime - LastAttackStartTime) >= AcceptMinCheckTime;
+}
+
+void AABCharacterPlayer::ServerRPC_NotifyHit_Implementation(const FHitResult& HitResult, float HitCheckTime)
 {
 	AActor* TargetActor = HitResult.GetActor();
 	if (IsValid(TargetActor))
 	{
 		const FVector HitLocation = HitResult.Location;
-		const FBox HitBox = this->GetComponentsBoundingBox();
+		const FBox HitBox = TargetActor->GetComponentsBoundingBox();
 		const FVector ActorBoxCenter = (HitBox.Min + HitBox.Max) / 2;
 		if (FVector::DistSquared(HitLocation, ActorBoxCenter) <= AcceptCheckDistance * AcceptCheckDistance)
 		{
-
+			AttackHitConfirm(TargetActor);
 		}
+		else
+		{
+			AB_LOG(LogABNetwork, Warning, TEXT("HitTest Rejected"));
+		}
+
+#if ENABLE_DRAW_DEBUG
+		DrawDebugPoint(GetWorld(), ActorBoxCenter, 50.0f, FColor::Cyan, false, 5.0f);
+		DrawDebugPoint(GetWorld(), HitLocation, 50.0f, FColor::Magenta, false, 5.0f);
+#endif
+		DrawnDebugAttackRange(FColor::Green, HitResult.TraceStart, HitResult.TraceEnd, TargetActor->GetActorForwardVector());
 	}
 }
 
 bool AABCharacterPlayer::ServerRPC_NotifMiss_Validate(FVector TraceStart, FVector TraceEnd, FVector TraceDir, float HitCheckTime)
 {
-	return true;
+	if (LastAttackStartTime == 0.0f)
+	{
+		return true;
+	}
+
+	return (HitCheckTime - LastAttackStartTime) >= AcceptMinCheckTime;
 }
 
 void AABCharacterPlayer::ServerRPC_NotifMiss_Implementation(FVector TraceStart, FVector TraceEnd, FVector TraceDir, float HitCheckTime)
 {
-
+	DrawnDebugAttackRange(FColor::Red, TraceStart, TraceEnd, TraceDir);
 }
 
 void AABCharacterPlayer::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -420,6 +475,7 @@ void AABCharacterPlayer::ServerRPC_Attack_Implementation(float AttackStartTime)
 	}), AttackTime - AttackTimeDifference, false, -1.0f);
 
 	LastAttackStartTime = AttackStartTime;
+	//PlayAttackAnimation();
 
 	MulticastRPC_Attack();
 }
