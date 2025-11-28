@@ -18,6 +18,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/GameState.h"
+#include "EngineUtils.h"
 
 
 AABCharacterPlayer::AABCharacterPlayer()
@@ -339,7 +340,7 @@ void AABCharacterPlayer::AttackHitCheck()
 			}
 			else
 			{
-				ServerRPC_NotifMiss(Start, End, Forward, HitCheckTime);
+				ServerRPC_NotifyMiss(Start, End, Forward, HitCheckTime);
 			}
 		}
 
@@ -422,7 +423,7 @@ void AABCharacterPlayer::ServerRPC_NotifyHit_Implementation(const FHitResult& Hi
 	}
 }
 
-bool AABCharacterPlayer::ServerRPC_NotifMiss_Validate(FVector TraceStart, FVector TraceEnd, FVector TraceDir, float HitCheckTime)
+bool AABCharacterPlayer::ServerRPC_NotifyMiss_Validate(FVector_NetQuantize TraceStart, FVector_NetQuantize TraceEnd, FVector_NetQuantizeNormal TraceDir, float HitCheckTime)
 {
 	if (LastAttackStartTime == 0.0f)
 	{
@@ -432,7 +433,7 @@ bool AABCharacterPlayer::ServerRPC_NotifMiss_Validate(FVector TraceStart, FVecto
 	return (HitCheckTime - LastAttackStartTime) >= AcceptMinCheckTime;
 }
 
-void AABCharacterPlayer::ServerRPC_NotifMiss_Implementation(FVector TraceStart, FVector TraceEnd, FVector TraceDir, float HitCheckTime)
+void AABCharacterPlayer::ServerRPC_NotifyMiss_Implementation(FVector_NetQuantize TraceStart, FVector_NetQuantize TraceEnd, FVector_NetQuantizeNormal TraceDir, float HitCheckTime)
 {
 	DrawnDebugAttackRange(FColor::Red, TraceStart, TraceEnd, TraceDir);
 }
@@ -477,7 +478,32 @@ void AABCharacterPlayer::ServerRPC_Attack_Implementation(float AttackStartTime)
 	LastAttackStartTime = AttackStartTime;
 	//PlayAttackAnimation();
 
-	MulticastRPC_Attack();
+	//MulticastRPC_Attack();
+	//EngineUtils.h Æ÷ÇÔ
+	/*for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
+	{
+		if (PlayerController && GetController() != PlayerController)
+		{
+			AABCharacterPlayer* ReceivePlayer = Cast<AABCharacterPlayer>(PlayerController->GetPawn());
+			if (ReceivePlayer)
+			{
+				ReceivePlayer->ClientRPC_PlayAnimation(this);
+			}
+		}
+	}*/
+
+	for (FConstPlayerControllerIterator Itr = GetWorld()->GetPlayerControllerIterator(); Itr; Itr++)
+	{
+		APlayerController* PlayerController = Itr->Get();
+		if (PlayerController && GetController() != PlayerController)
+		{
+			AABCharacterPlayer* ReceivePlayer = Cast<AABCharacterPlayer>(PlayerController->GetPawn());
+			if (ReceivePlayer)
+			{
+				ReceivePlayer->ClientRPC_PlayAnimation(this);
+			}
+		}
+	}
 }
 
 bool AABCharacterPlayer::ServerRPC_Attack_Validate(float AttackStartTime)
@@ -485,6 +511,14 @@ bool AABCharacterPlayer::ServerRPC_Attack_Validate(float AttackStartTime)
 	if (LastAttackStartTime == 0.0f) return true;
 
 	return (AttackStartTime - LastAttackStartTime) >= AttackTime;
+}
+
+void AABCharacterPlayer::ClientRPC_PlayAnimation_Implementation(AABCharacterPlayer* Actor)
+{
+	if (Actor)
+	{
+		Actor->PlayAttackAnimation();
+	}
 }
 
 void AABCharacterPlayer::MulticastRPC_Attack_Implementation()
