@@ -19,9 +19,11 @@
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/GameState.h"
 #include "EngineUtils.h"
+#include "Character/ABCharacterMovementComponent.h"
 
 
-AABCharacterPlayer::AABCharacterPlayer()
+AABCharacterPlayer::AABCharacterPlayer(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<UABCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
 	// Camera
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -32,7 +34,7 @@ AABCharacterPlayer::AABCharacterPlayer()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
-
+	
 	// Input
 	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionJumpRef(TEXT("/Script/EnhancedInput.InputAction'/Game/ArenaBattle/Input/Actions/IA_Jump.IA_Jump'"));
 	if (nullptr != InputActionJumpRef.Object)
@@ -68,6 +70,12 @@ AABCharacterPlayer::AABCharacterPlayer()
 	if (nullptr != InputActionAttackRef.Object)
 	{
 		AttackAction = InputActionAttackRef.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> InputActionTeleportRef(TEXT("/Script/EnhancedInput.InputAction'/Game/ArenaBattle/Input/Actions/IA_Teleport.IA_Teleport'"));
+	if (nullptr != InputActionTeleportRef.Object)
+	{
+		TeleportAction = InputActionTeleportRef.Object;
 	}
 
 	CurrentCharacterControlType = ECharacterControlType::Quater;
@@ -171,6 +179,7 @@ void AABCharacterPlayer::SetupPlayerInputComponent(class UInputComponent* Player
 	EnhancedInputComponent->BindAction(ShoulderLookAction, ETriggerEvent::Triggered, this, &AABCharacterPlayer::ShoulderLook);
 	EnhancedInputComponent->BindAction(QuaterMoveAction, ETriggerEvent::Triggered, this, &AABCharacterPlayer::QuaterMove);
 	EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &AABCharacterPlayer::Attack);
+	EnhancedInputComponent->BindAction(TeleportAction, ETriggerEvent::Triggered, this, &AABCharacterPlayer::Teleport);
 }
 
 void AABCharacterPlayer::ChangeCharacterControl()
@@ -486,21 +495,6 @@ void AABCharacterPlayer::ServerRPC_Attack_Implementation(float AttackStartTime)
 	}), AttackTime - AttackTimeDifference, false, -1.0f);
 
 	LastAttackStartTime = AttackStartTime;
-	//PlayAttackAnimation();
-
-	//MulticastRPC_Attack();
-	//EngineUtils.h Æ÷ÇÔ
-	/*for (APlayerController* PlayerController : TActorRange<APlayerController>(GetWorld()))
-	{
-		if (PlayerController && GetController() != PlayerController)
-		{
-			AABCharacterPlayer* ReceivePlayer = Cast<AABCharacterPlayer>(PlayerController->GetPawn());
-			if (ReceivePlayer)
-			{
-				ReceivePlayer->ClientRPC_PlayAnimation(this);
-			}
-		}
-	}*/
 
 	for (FConstPlayerControllerIterator Itr = GetWorld()->GetPlayerControllerIterator(); Itr; Itr++)
 	{
@@ -550,4 +544,9 @@ void AABCharacterPlayer::SetupHUDWidget(UABHUDWidget* InHUDWidget)
 		Stat->OnStatChanged.AddUObject(InHUDWidget, &UABHUDWidget::UpdateStat);
 		Stat->OnHpChanged.AddUObject(InHUDWidget, &UABHUDWidget::UpdateHpBar);
 	}
+}
+
+void AABCharacterPlayer::Teleport()
+{
+	AB_LOG(LogABTeleport, Log, TEXT("Begin"));
 }
