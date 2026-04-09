@@ -3,3 +3,15 @@
 
 #include "Character/ABCharacterMovementComponent.h"
 
+UABCharacterMovementComponent::UABCharacterMovementComponent()
+{
+
+}
+
+void UABCharacterMovementComponent::SetTeleportCommand()
+{
+}
+
+void UABCharacterMovementComponent::ABTeleport()
+{
+}

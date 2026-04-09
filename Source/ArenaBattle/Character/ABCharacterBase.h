@@ -37,6 +37,7 @@ class ARENABATTLE_API AABCharacterBase : public ACharacter, public IABAnimationA
 public:
 	// Sets default values for this character's properties
 	AABCharacterBase();
+	AABCharacterBase(const FObjectInitializer& ObjectInitializer);
 
 	virtual void PostInitializeComponents() override;
 

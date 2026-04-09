@@ -14,4 +14,22 @@ class ARENABATTLE_API UABCharacterMovementComponent : public UCharacterMovementC
 {
 	GENERATED_BODY()
 	
+public:
+	UABCharacterMovementComponent();
+
+	void SetTeleportCommand();
+
+public:
+	uint8 bPressedTeleport : 1;
+	uint8 bDidTeleport : 1;
+
+protected:
+	virtual void ABTeleport();
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Teleport")
+	float TeleportOffset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Teleport")
+	float TeleportCoolTime;
 };

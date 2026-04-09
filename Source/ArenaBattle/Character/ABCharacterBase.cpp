@@ -19,8 +19,14 @@
 
 DEFINE_LOG_CATEGORY(LogABCharacter);
 
-// Sets default values
 AABCharacterBase::AABCharacterBase()
+{
+
+}
+
+// Sets default values
+AABCharacterBase::AABCharacterBase(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
 	// Pawn
 	bUseControllerRotationPitch = false;
