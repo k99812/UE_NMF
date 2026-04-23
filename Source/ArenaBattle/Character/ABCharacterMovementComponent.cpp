@@ -2,6 +2,8 @@
 
 
 #include "Character/ABCharacterMovementComponent.h"
+#include "ArenaBattle.h"
+#include "GameFramework/Character.h"
 
 UABCharacterMovementComponent::UABCharacterMovementComponent()
 {
@@ -16,4 +18,19 @@ void UABCharacterMovementComponent::SetTeleportCommand()
 
 void UABCharacterMovementComponent::ABTeleport()
 {
+	if (CharacterOwner)
+	{
+		AB_SUBLOG(LogABTeleport, Log, TEXT("Teleport Begin"));
+
+		FVector TargetLocation = CharacterOwner->GetActorLocation() + CharacterOwner->GetActorForwardVector() * TeleportOffset;
+		CharacterOwner->TeleportTo(TargetLocation, CharacterOwner->GetActorRotation(), false, true);
+		bDidTeleport = true;
+
+		FTimerHandle Handle;
+		GetWorld()->GetTimerManager().SetTimer(Handle, FTimerDelegate::CreateLambda([&]()
+		{
+			bDidTeleport = true;
+			AB_SUBLOG(LogABTeleport, Log, TEXT("Teleport End"));
+		}), TeleportCoolTime, false, -1.0f);
+	}
 }
