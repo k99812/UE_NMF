@@ -5,11 +5,13 @@
 
 UABCharacterMovementComponent::UABCharacterMovementComponent()
 {
-
+	TeleportOffset = 600.0f;
+	TeleportCoolTime = 3.0f;
 }
 
 void UABCharacterMovementComponent::SetTeleportCommand()
 {
+	bPressedTeleport = true;
 }
 
 void UABCharacterMovementComponent::ABTeleport()
