@@ -7,8 +7,11 @@
 
 UABCharacterMovementComponent::UABCharacterMovementComponent()
 {
-	TeleportOffset = 600.0f;
+	TeleportOffset = 100.0f;
 	TeleportCoolTime = 3.0f;
+
+	bPressedTeleport = false;
+	bDidTeleport = false;
 }
 
 void UABCharacterMovementComponent::SetTeleportCommand()
@@ -20,17 +23,30 @@ void UABCharacterMovementComponent::ABTeleport()
 {
 	if (CharacterOwner)
 	{
-		AB_SUBLOG(LogABTeleport, Log, TEXT("Teleport Begin"));
+		AB_SUBLOG(LogABTeleport, Log, TEXT("%s"), TEXT("Teleport Begin"));
 
 		FVector TargetLocation = CharacterOwner->GetActorLocation() + CharacterOwner->GetActorForwardVector() * TeleportOffset;
 		CharacterOwner->TeleportTo(TargetLocation, CharacterOwner->GetActorRotation(), false, true);
 		bDidTeleport = true;
 
 		FTimerHandle Handle;
-		GetWorld()->GetTimerManager().SetTimer(Handle, FTimerDelegate::CreateLambda([&]()
+		GetWorld()->GetTimerManager().SetTimer(Handle, FTimerDelegate::CreateLambda([&]
 		{
-			bDidTeleport = true;
-			AB_SUBLOG(LogABTeleport, Log, TEXT("Teleport End"));
+			bDidTeleport = false;
+			AB_SUBLOG(LogABTeleport, Log, TEXT("%s"), TEXT("Teleport End"));
 		}), TeleportCoolTime, false, -1.0f);
+	}
+}
+
+void UABCharacterMovementComponent::OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity)
+{
+	if (bPressedTeleport && !bDidTeleport)
+	{
+		ABTeleport();
+	}
+
+	if (bPressedTeleport)
+	{
+		bPressedTeleport = false;
 	}
 }

@@ -25,6 +25,7 @@ public:
 
 protected:
 	virtual void ABTeleport();
+	virtual void OnMovementUpdated(float DeltaSeconds, const FVector& OldLocation, const FVector& OldVelocity) override;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Teleport")
